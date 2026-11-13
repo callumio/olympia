@@ -18,8 +18,13 @@
       };
     };
 
-    system.stateVersion = "26.11";
+    environment.systemPackages = with pkgs; [
+      vim
+      git
+    ];
 
     age.identityPaths = ["/persist/etc/ssh/ssh_host_ed25519_key"];
+
+    system.stateVersion = "26.11";
   };
 }

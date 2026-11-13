@@ -42,7 +42,6 @@
         "/var/lib/nixos"
         "/var/lib/systemd"
         "/var/log"
-        "/etc/ssh"
       ];
 
       files = [
