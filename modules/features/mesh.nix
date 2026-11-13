@@ -18,8 +18,17 @@ in
         address = "127.0.0.1";
         port = 8080;
         settings.server_url = "https://${config.mySystem.headscale.host}";
+        settings.prefixes = {
+          v4 = "100.64.0.0/10";
+        };
         settings.dns = {
+          magic_dns = true;
           base_domain = "net.cleslie.uk";
+          override_local_dns = true;
+          nameservers.global = [
+            "1.1.1.1"
+            "1.0.0.1"
+          ];
         };
       };
 
