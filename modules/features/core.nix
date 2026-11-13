@@ -19,5 +19,11 @@ _: {
     };
 
     system.stateVersion = "26.11";
+
+    age.rekey = {
+        localStorageDir = ../../. + "/secrets/${config.networking.hostName}";
+        masterIdentities = [ ../../secrets/master.pub ];
+        storageMode = "local";
+    };
   };
 }

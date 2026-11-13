@@ -63,6 +63,7 @@ in
 
       modules = [
         inputs.disko.nixosModules.disko
+        inputs.agenix-rekey.flakeModule
 
         config.flake.modules.nixos.storage-options
         config.flake.modules.nixos.storage-disko
