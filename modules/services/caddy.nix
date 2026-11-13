@@ -8,14 +8,16 @@
       description = "Additional Caddy virtual hosts.";
     };
 
-    services.caddy = {
-      enable = true;
-      virtualHosts = config.mySystem.caddy.virtualHosts;
-    };
+    config = {
+      services.caddy = {
+        enable = true;
+        virtualHosts = config.mySystem.caddy.virtualHosts;
+      };
 
-    networking.firewall.allowedTCPPorts = [
-      80
-      443
-    ];
+      networking.firewall.allowedTCPPorts = [
+        80
+        443
+      ];
+    };
   };
 }
