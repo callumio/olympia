@@ -31,7 +31,7 @@
 
     storage = {
       disks.main = {
-        device = "/dev/disk/by-id/wwn-0x60c46a563ef2411784ebcda2dd53a2fe";
+        device = "/dev/disk/by-id/wwn-0x608933f3335143d8a409615778eca0d5";
         efi = true;
       };
 
