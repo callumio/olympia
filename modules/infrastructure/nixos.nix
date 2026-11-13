@@ -56,17 +56,13 @@ let
     name: host:
     lib.optional host.tailscale.enable (
       { config, ... }:
-      let
-        authKeyFile = if host.tailscale.authKeyFile == null
-          then ../../secrets + "/${name}-tailscale-auth-key.age"
-          else host.tailscale.authKeyFile;
-      in {
+      {
         imports = [
           flakeModules.tailscale
         ];
 
         age.secrets.tailscale-auth-key = {
-          file = authKeyFile;
+          file = host.tailscale.authKeyFile;
         };
 
         mySystem.tailscale.authKeyFile = config.age.secrets.tailscale-auth-key.path;

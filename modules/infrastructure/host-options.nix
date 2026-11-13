@@ -37,7 +37,7 @@
 
             authKeyFile = lib.mkOption {
               type = lib.types.nullOr lib.types.path;
-              default = null;
+              default = ../../secrets/tailscale-auth-bootstrap-key.age;
               description = "Override the hostname-derived Tailscale auth key file.";
             };
           };
