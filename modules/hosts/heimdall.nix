@@ -27,7 +27,7 @@
       publicKeys = [ ];
     };
 
-    hostId = "deadbeef";
+    hostId = "1206fe36";
 
     storage = {
       disks.main = {
