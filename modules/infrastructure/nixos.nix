@@ -5,8 +5,8 @@ let
 
   mkAdminUsers =
     admins: name:
-    lib.mapAttrsToList (username: user: {
-      age.secrets."${name}-${username}-pw".file = ../../secrets + "/${name}-${username}-pw.age";
+    lib.mapAttrsToList (username: user: {config, ...}: let secret = "${name}-${username}-pw"; in{
+      age.secrets."${name}-${username}-pw".file = ../../secrets + "/${secret}.age";
       users.users.${username} = {
         isNormalUser = true;
         inherit (user) description;
@@ -17,7 +17,7 @@ let
         inherit (user) extraGroups;
 
         openssh.authorizedKeys.keys = user.opensshKeys;
-        passwordFile = config.age.secrets."${name}-${username}-pw".path;
+        hashedPasswordFile = config.age.secrets."${secret}".path;
       };
     }) admins;
 
