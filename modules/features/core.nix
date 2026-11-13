@@ -1,5 +1,5 @@
 {config, inputs, ...}: {
-  flake.modules.nixos.core = _: {
+  flake.modules.nixos.core = {pkgs,...}: {
     nix = {
       settings = {
         experimental-features = [
