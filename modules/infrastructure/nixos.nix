@@ -4,7 +4,7 @@ let
   lib = inputs.nixpkgs.lib;
 
   mkAdminUsers =
-    admins: name:
+    admins: name: pw:
     lib.mapAttrsToList (username: user: {
       age.secrets."${name}-${username}-pw".file = ../../secrets + "/${name}-${username}-pw.age";
       users.users.${username} = {
@@ -17,7 +17,7 @@ let
         inherit (user) extraGroups;
 
         openssh.authorizedKeys.keys = user.opensshKeys;
-        passwordFile = config.age.secrets."${name}-${username}-pw".path;
+        passwordFile = pw;
       };
     }) admins;
 
@@ -81,7 +81,7 @@ in
         lib.attrValues host.storage.pools
       )) config.flake.modules.nixos.impermanent
       ++ host.modules
-      ++ mkAdminUsers host.admins name
+      ++ mkAdminUsers host.admins name config.age.secrets."${name}-${username}-pw".path
       ++ mkDeployUser host;
     }
   ) config.hosts;
