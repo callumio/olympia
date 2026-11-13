@@ -11,6 +11,7 @@
     config = {
       services.caddy = {
         enable = true;
+        email = "acme@cleslie.uk";
         virtualHosts = config.mySystem.caddy.virtualHosts;
       };
 
