@@ -39,6 +39,12 @@ in
   };
 
   flake.modules.nixos.tailscale = { config, ... }: {
+    options.mySystem.tailscale.headscaleServer = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Whether this host also runs the Headscale server.";
+    };
+
     options.mySystem.tailscale.authKeyFile = lib.mkOption {
       type = lib.types.nullOr lib.types.path;
       default = null;
@@ -50,9 +56,11 @@ in
         enable = true;
         openFirewall = true;
         authKeyFile = config.mySystem.tailscale.authKeyFile;
-        extraUpFlags = [
-          "--login-server=${headscaleUrl}"
-        ];
+        extraUpFlags =
+          [
+            "--login-server=${headscaleUrl}"
+          ]
+          ++ lib.optional config.mySystem.tailscale.headscaleServer "--accept-dns=false";
       };
 
       environment.persistence."/persist".directories = [

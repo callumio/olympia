@@ -70,6 +70,7 @@ let
         };
 
         mySystem.tailscale.authKeyFile = config.age.secrets.tailscale-auth-key.path;
+        mySystem.tailscale.headscaleServer = host.headscale.enable;
       }
     );
 
