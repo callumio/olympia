@@ -52,6 +52,58 @@ let
       ];
     };
 
+  mkTailscale =
+    name: host:
+    lib.optional host.tailscale.enable (
+      { config, ... }:
+      let
+        authKeyFile = if host.tailscale.authKeyFile == null
+          then ../../secrets + "/${name}-tailscale-auth-key.age"
+          else host.tailscale.authKeyFile;
+      in {
+        imports = [
+          flakeModules.tailscale
+        ];
+
+        age.secrets.tailscale-auth-key = {
+          file = authKeyFile;
+        };
+
+        mySystem.tailscale.authKeyFile = config.age.secrets.tailscale-auth-key.path;
+      }
+    );
+
+  mkHeadscale =
+    host:
+    lib.optional host.headscale.enable (
+      { config, ... }:
+      {
+        imports = [
+          flakeModules.headscale
+        ] ++ lib.optional host.headscale.proxy.enable flakeModules.caddy;
+
+        mySystem.caddy.virtualHosts = lib.mkIf host.headscale.proxy.enable {
+          "${config.mySystem.headscale.host}".extraConfig = ''
+            reverse_proxy ${config.services.headscale.address}:${toString config.services.headscale.port}
+          '';
+        };
+      }
+    );
+
+  mkCaddy =
+    host:
+    lib.optional host.caddy.enable (
+      {
+        imports = [
+          flakeModules.caddy
+        ];
+
+        mySystem.caddy.virtualHosts = host.caddy.virtualHosts;
+      }
+    );
+
+  flakeModules = config.flake.modules.nixos;
+
 in
 {
   flake.nixosConfigurations = lib.mapAttrs (
@@ -82,6 +134,9 @@ in
         lib.attrValues host.storage.pools
       )) config.flake.modules.nixos.impermanent
       ++ host.modules
+      ++ mkHeadscale host
+      ++ mkCaddy host
+      ++ mkTailscale name host
       ++ mkAdminUsers host.admins name
       ++ mkDeployUser host;
     }

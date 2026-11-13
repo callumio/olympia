@@ -11,6 +11,12 @@
       config.flake.modules.nixos.oracle-ampere
     ];
 
+    headscale = {
+      enable = true;
+      proxy.enable = true;
+    };
+    tailscale.enable = true;
+
     timeZone = "Europe/London";
 
     admins = {

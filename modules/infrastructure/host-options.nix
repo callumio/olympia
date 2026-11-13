@@ -17,6 +17,31 @@
             default = [ ];
           };
 
+          headscale = {
+            enable = lib.mkEnableOption "Headscale";
+            proxy.enable = lib.mkEnableOption "Headscale proxy through Caddy";
+          };
+
+          caddy = {
+            enable = lib.mkEnableOption "Caddy";
+
+            virtualHosts = lib.mkOption {
+              type = lib.types.attrs;
+              default = { };
+              description = "Additional Caddy virtual hosts.";
+            };
+          };
+
+          tailscale = {
+            enable = lib.mkEnableOption "Tailscale";
+
+            authKeyFile = lib.mkOption {
+              type = lib.types.nullOr lib.types.path;
+              default = null;
+              description = "Override the hostname-derived Tailscale auth key file.";
+            };
+          };
+
           deploy = {
             enable = lib.mkEnableOption "deployment";
 
