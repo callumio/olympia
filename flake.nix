@@ -23,9 +23,17 @@
       inputs.nixpkgs.follows = "";
       inputs.home-manager.follows = "";
     };
+
+    forge = {
+      url = "github:callumio/forge";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        import-tree.follows = "import-tree";
+        flake-parts.follows = "flake-parts";
+      };
+    };
   };
-  outputs =
-    inputs:
+  outputs = inputs:
     inputs.flake-parts.lib.mkFlake {
       inherit inputs;
     } (inputs.import-tree ./modules);

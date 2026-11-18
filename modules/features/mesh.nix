@@ -1,11 +1,14 @@
-{ lib, ... }:
-
-let
+{lib, ...}: let
   headscaleHost = "headscale.cleslie.uk";
   headscaleUrl = "https://${headscaleHost}";
-in
-{
-  flake.modules.nixos.headscale = { config, ... }: {
+in {
+  flake.modules.nixos.headscale = {
+    config,
+    inputs,
+    ...
+  }: {
+    imports = [inputs.forge.modules.nixos.hetm];
+
     options.mySystem.headscale.host = lib.mkOption {
       type = lib.types.str;
       default = headscaleHost;
@@ -13,22 +16,30 @@ in
     };
 
     config = {
+      services.hetm = {
+        enable = true;
+        audience = "hetm.cleslie.uk";
+        allow = ["repo:callumio/olympia:ref:refs/heads/main"];
+      };
+
       services.headscale = {
         enable = true;
         address = "127.0.0.1";
         port = 8080;
-        settings.server_url = "https://${config.mySystem.headscale.host}";
-        settings.prefixes = {
-          v4 = "100.64.0.0/10";
-        };
-        settings.dns = {
-          magic_dns = true;
-          base_domain = "net.cleslie.uk";
-          override_local_dns = true;
-          nameservers.global = [
-            "1.1.1.1"
-            "1.0.0.1"
-          ];
+        settings = {
+          server_url = "https://${config.mySystem.headscale.host}";
+          prefixes = {
+            v4 = "100.64.0.0/10";
+          };
+          dns = {
+            magic_dns = true;
+            base_domain = "net.cleslie.uk";
+            override_local_dns = true;
+            nameservers.global = [
+              "1.1.1.1"
+              "1.0.0.1"
+            ];
+          };
         };
       };
 
@@ -38,7 +49,7 @@ in
     };
   };
 
-  flake.modules.nixos.tailscale = { config, ... }: {
+  flake.modules.nixos.tailscale = {config, ...}: {
     options.mySystem.tailscale.headscaleServer = lib.mkOption {
       type = lib.types.bool;
       default = false;
@@ -68,5 +79,4 @@ in
       ];
     };
   };
-
 }

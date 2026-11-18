@@ -155,6 +155,32 @@
         "type": "github"
       }
     },
+    "forge": {
+      "inputs": {
+        "flake-parts": [
+          "flake-parts"
+        ],
+        "import-tree": [
+          "import-tree"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1795029503,
+        "narHash": "sha256-AnMN097O2z/gV+K7zAqFZ0PXIsFHPECHn6f7G3sE5Lc=",
+        "owner": "callumio",
+        "repo": "forge",
+        "rev": "8ce1991e9777b7bef3d957d631b77ef6bcfbef10",
+        "type": "github"
+      },
+      "original": {
+        "owner": "callumio",
+        "repo": "forge",
+        "type": "github"
+      }
+    },
     "gitignore": {
       "inputs": {
         "nixpkgs": [
@@ -287,6 +313,7 @@
         "agenix-rekey": "agenix-rekey",
         "disko": "disko",
         "flake-parts": "flake-parts_2",
+        "forge": "forge",
         "impermanence": "impermanence",
         "import-tree": "import-tree",
         "nixpkgs": "nixpkgs_2",
