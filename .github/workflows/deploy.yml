@@ -1,0 +1,118 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Deploy every host, even when its system derivation is unchanged
+        type: boolean
+        default: false
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  plan:
+    name: Plan
+    runs-on: ubuntu-latest
+    outputs:
+      hosts: ${{ steps.plan.outputs.hosts }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Find changed hosts
+        id: plan
+        env:
+          FORCE: ${{ inputs.force }}
+        run: |
+          set -euo pipefail
+
+          all=$(nix eval --json .#deploy.nodes --apply builtins.attrNames)
+          echo "Deployable hosts: $all"
+
+          if [[ "${FORCE:-false}" == "true" ]] || ! git rev-parse --verify --quiet HEAD~1 >/dev/null; then
+            changed="$all"
+          else
+            base=$(git rev-parse HEAD~1)
+
+            current=$(nix eval --json .#nixosConfigurations \
+              --apply 'hosts: builtins.mapAttrs (_: h: h.config.system.build.toplevel.drvPath) hosts')
+
+            if previous=$(nix eval --json "git+file://${PWD}?rev=${base}#nixosConfigurations" \
+              --apply 'hosts: builtins.mapAttrs (_: h: h.config.system.build.toplevel.drvPath) hosts' 2>/dev/null); then
+              changed=$(jq -c --argjson current "$current" --argjson previous "$previous" \
+                '[.[] | select(($previous[.] // "") != ($current[.] // "missing"))]' <<< "$all")
+            else
+              echo "::warning::Could not evaluate ${base}; deploying every host"
+              changed="$all"
+            fi
+          fi
+
+          echo "Changed hosts: $changed"
+          echo "hosts=$changed" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    name: Deploy ${{ matrix.host }}
+    needs: plan
+    if: needs.plan.outputs.hosts != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        host: ${{ fromJSON(needs.plan.outputs.hosts) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Get Tailscale pre-auth key
+        id: tailscale
+        env:
+          HETM_AUDIENCE: hetm.cleslie.uk
+          HETM_URL: https://hetm.cleslie.uk/token
+        run: |
+          set -euo pipefail
+
+          token=$(curl -fsS \
+            -H "Authorization: Bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${HETM_AUDIENCE}" \
+            | jq -r .value)
+
+          key=$(curl -fsS -X POST \
+            -H "Authorization: Bearer ${token}" \
+            "${HETM_URL}" \
+            | jq -r .key)
+
+          if [[ -z "$key" || "$key" == "null" ]]; then
+            echo "hetm did not return a pre-auth key" >&2
+            exit 1
+          fi
+
+          echo "::add-mask::$key"
+          echo "key=$key" >> "$GITHUB_OUTPUT"
+
+      - name: Join tailnet
+        uses: tailscale/github-action@v4
+        with:
+          authkey: ${{ steps.tailscale.outputs.key }}
+          hostname: gh-${{ github.run_id }}-${{ matrix.host }}
+
+      - name: Deploy ${{ matrix.host }}
+        run: nix run .#deploy -- --remote-build .#${{ matrix.host }}
