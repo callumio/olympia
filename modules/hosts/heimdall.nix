@@ -37,6 +37,7 @@ in
         authKeyFile = ../../secrets/tailscale-auth-bootstrap-key.age;
         loginServer = "https://${config.olympia.headscale.host}";
         acceptDns = false;
+        ssh = true;
       };
 
       olympia.admins.admin = {
@@ -50,8 +51,12 @@ in
 
       olympia.deploy = {
         enable = true;
-        hostname = "heimdall";
+        hostname = "heimdall.net.cleslie.uk";
         publicKeys = [ ];
+        sshOpts = [
+          "-o"
+          "StrictHostKeyChecking=accept-new"
+        ];
       };
 
       olympia.storage = {

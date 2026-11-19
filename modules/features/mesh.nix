@@ -9,6 +9,7 @@ in
       config,
       lib,
       options,
+      pkgs,
       ...
     }:
     let
@@ -57,6 +58,8 @@ in
       };
 
       config = {
+        environment.etc."headscale/policy.hujson".source = ./headscale-policy.json;
+
         services.headscale = {
           enable = true;
           address = "127.0.0.1";
@@ -64,6 +67,11 @@ in
 
           settings = {
             server_url = "https://${cfg.host}";
+
+            policy = {
+              mode = "file";
+              path = "/etc/headscale/policy.hujson";
+            };
 
             prefixes = {
               v4 = "100.64.0.0/10";
@@ -80,6 +88,11 @@ in
               ];
             };
           };
+        };
+
+        systemd.services.headscale = {
+          serviceConfig.ExecReload = "${pkgs.coreutils}/bin/kill -HUP $MAINPID";
+          reloadTriggers = [ ./headscale-policy.json ];
         };
 
         services.hetm = {
@@ -135,9 +148,24 @@ in
           default = true;
           description = "Whether Tailscale should accept DNS settings from the coordination server.";
         };
+
+        ssh = lib.mkOption {
+          type = lib.types.bool;
+          default = false;
+          description = ''
+            Whether Tailscale SSH should serve SSH on the tailnet address.
+            This only takes effect when {option}`authKeyFile` is set, because
+            NixOS only applies `extraUpFlags` during auth-key login.
+          '';
+        };
       };
 
       config = {
+        assertions = lib.optional cfg.ssh {
+          assertion = cfg.authKeyFile != null;
+          message = "olympia.tailscale.ssh requires olympia.tailscale.authKeyFile, because NixOS only applies extraUpFlags during auth-key login.";
+        };
+
         age.secrets.tailscale-auth-key = lib.mkIf (cfg.authKeyFile != null) {
           file = cfg.authKeyFile;
         };
@@ -150,7 +178,8 @@ in
 
           extraUpFlags =
             lib.optional (cfg.loginServer != null) "--login-server=${cfg.loginServer}"
-            ++ lib.optional (!cfg.acceptDns) "--accept-dns=false";
+            ++ lib.optional (!cfg.acceptDns) "--accept-dns=false"
+            ++ lib.optional cfg.ssh "--ssh";
         };
       }
       // lib.optionalAttrs (options.environment ? persistence) {

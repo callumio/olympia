@@ -27,6 +27,12 @@ _:
           default = [ ];
           description = "SSH public keys allowed to deploy to this host.";
         };
+
+        sshOpts = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
+          default = [ ];
+          description = "Extra options passed to ssh by deploy-rs.";
+        };
       };
 
       config = lib.mkIf cfg.enable {

@@ -1,0 +1,42 @@
+{
+  // Ownerless tags are intentional. Headscale only requires the tag key to
+  // exist; membership is granted by a tagged pre-auth key or `headscale
+  // nodes tag`. Keeping owners empty means no user can self-assign these tags.
+  "tagOwners": {
+    "tag:ci": [],
+    "tag:server": []
+  },
+
+  "acls": [
+    // Interactive admin access to the whole tailnet.
+    {
+      "action": "accept",
+      "src": ["autogroup:member"],
+      "dst": ["*:*"]
+    },
+
+    // CI may only reach deploy targets over SSH.
+    {
+      "action": "accept",
+      "src": ["tag:ci"],
+      "dst": ["tag:server:22"]
+    }
+  ],
+
+  // Tailscale SSH rules are separate from packet ACLs. Without an `ssh` rule,
+  // tailscaled denies keyless SSH even when port 22 is allowed above.
+  "ssh": [
+    {
+      "action": "accept",
+      "src": ["tag:ci"],
+      "dst": ["tag:server"],
+      "users": ["deploy"]
+    },
+    {
+      "action": "accept",
+      "src": ["autogroup:member"],
+      "dst": ["tag:server"],
+      "users": ["root", "deploy"]
+    }
+  ]
+}

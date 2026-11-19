@@ -14,6 +14,7 @@ in
     profiles.system = {
       user = "root";
       sshUser = host.config.olympia.deploy.user;
+      sshOpts = host.config.olympia.deploy.sshOpts;
 
       path = inputs.deploy-rs.lib.${host.config.nixpkgs.system}.activate.nixos host;
 
