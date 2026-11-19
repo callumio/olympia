@@ -18,6 +18,9 @@ in
 
       path = inputs.deploy-rs.lib.${host.config.nixpkgs.system}.activate.nixos host;
 
+      # CI only evaluates and orchestrates. The target builds its own system.
+      remoteBuild = true;
+
       magicRollback = true;
       autoRollback = true;
     };

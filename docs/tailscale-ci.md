@@ -99,49 +99,29 @@ MagicDNS name so the connection lands on the tailnet address, not a public IP.
 
 ## CI workflow
 
-The deployment job needs `id-token: write` so GitHub can issue the OIDC token,
-and it needs Tailscale available on the runner:
+The workflow lives in `.github/workflows/deploy.yml` and runs on pushes to
+`main`. It has two jobs:
 
-```yaml
-permissions:
-  contents: read
-  id-token: write
+1. **Plan** evaluates `nixosConfigurations.<host>.config.system.build.toplevel`
+   for every deployable host at `HEAD` and at `HEAD~1`. Hosts whose derivation
+   path changed are passed to the deploy matrix. A `workflow_dispatch` input
+   named `force` deploys every host regardless.
+2. **Deploy** runs one matrix job per changed host. Each job mints its own
+   `tag:ci` key from hetm, joins the tailnet, and runs
+   `nix run .#deploy -- --remote-build .#<host>`.
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+`remoteBuild = true` is set in `modules/infrastructure/deploy.nix`, so CI only
+evaluates the flake and orchestrates the deployment. The target host builds
+its own system closure and fetches dependencies from its configured
+substituters.
 
-      - name: Get Tailscale pre-auth key
-        id: tailscale
-        run: |
-          token=$(curl -fsS \
-            -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=hetm.cleslie.uk" \
-            | jq -r .value)
+The workflow needs `id-token: write` for the GitHub OIDC token and uses
+`cachix/install-nix-action` on each runner. Tailscale is installed by
+`tailscale/github-action` after the runner obtains its ephemeral key.
 
-          key=$(curl -fsS \
-            -H "Authorization: Bearer $token" \
-            -X POST https://hetm.cleslie.uk/token \
-            | jq -r .key)
-
-          echo "::add-mask::$key"
-          echo "key=$key" >> "$GITHUB_OUTPUT"
-
-      - name: Join tailnet
-        uses: tailscale/github-action@v3
-        with:
-          authkey: ${{ steps.tailscale.outputs.key }}
-          args: --hostname=gh-${{ github.run_id }}
-
-      - name: Deploy
-        run: nix run github:serokell/deploy-rs -- .#heimdall
-```
-
-Adjust the attribute (`.#heimdall`) to the host being deployed. If the runner
-does not already have Nix, add `cachix/install-nix-action` before the deploy
-step.
+Run the workflow manually with `force` enabled when a previous commit was
+merged without being deployed; otherwise a CI-only commit will not change any
+host derivation and the matrix will be empty.
 
 ## Security notes
 
