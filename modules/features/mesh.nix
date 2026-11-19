@@ -1,82 +1,162 @@
-{lib, ...}: let
-  headscaleHost = "headscale.cleslie.uk";
-  headscaleUrl = "https://${headscaleHost}";
-in {
-  flake.modules.nixos.headscale = {
-    config,
-    inputs,
-    ...
-  }: {
-    imports = [inputs.forge.modules.nixos.hetm];
+{ config, inputs, ... }:
 
-    options.mySystem.headscale.host = lib.mkOption {
-      type = lib.types.str;
-      default = headscaleHost;
-      description = "Public hostname used by Headscale.";
-    };
+let
+  caddyModule = config.flake.modules.nixos.caddy;
+in
+{
+  flake.modules.nixos.headscale =
+    {
+      config,
+      lib,
+      options,
+      ...
+    }:
+    let
+      cfg = config.olympia.headscale;
+    in
+    {
+      imports = [
+        caddyModule
+        inputs.forge.nixosModules.hetm
+      ];
 
-    config = {
-      services.hetm = {
-        enable = true;
-        audience = "hetm.cleslie.uk";
-        allow = ["repo:callumio/olympia:ref:refs/heads/main"];
-      };
+      options.olympia.headscale = {
+        host = lib.mkOption {
+          type = lib.types.str;
+          description = "Public hostname used by Headscale.";
+        };
 
-      services.headscale = {
-        enable = true;
-        address = "127.0.0.1";
-        port = 8080;
-        settings = {
-          server_url = "https://${config.mySystem.headscale.host}";
-          prefixes = {
-            v4 = "100.64.0.0/10";
+        baseDomain = lib.mkOption {
+          type = lib.types.str;
+          description = "MagicDNS base domain.";
+        };
+
+        hetm = {
+          enable = lib.mkOption {
+            type = lib.types.bool;
+            default = true;
+            description = "Enable the Headscale pre-authentication key minter.";
           };
-          dns = {
-            magic_dns = true;
-            base_domain = "net.cleslie.uk";
-            override_local_dns = true;
-            nameservers.global = [
-              "1.1.1.1"
-              "1.0.0.1"
-            ];
+
+          audience = lib.mkOption {
+            type = lib.types.str;
+            description = "OIDC audience for hetm.";
+          };
+
+          host = lib.mkOption {
+            type = lib.types.str;
+            description = "Public hostname used by hetm.";
+          };
+
+          allow = lib.mkOption {
+            type = lib.types.listOf lib.types.str;
+            default = [ ];
+            description = "Allowed OIDC subject patterns.";
           };
         };
       };
 
-      environment.persistence."/persist".directories = [
-        "/var/lib/headscale"
-      ];
-    };
-  };
+      config = {
+        services.headscale = {
+          enable = true;
+          address = "127.0.0.1";
+          port = 8080;
 
-  flake.modules.nixos.tailscale = {config, ...}: {
-    options.mySystem.tailscale.headscaleServer = lib.mkOption {
-      type = lib.types.bool;
-      default = false;
-      description = "Whether this host also runs the Headscale server.";
+          settings = {
+            server_url = "https://${cfg.host}";
+
+            prefixes = {
+              v4 = "100.64.0.0/10";
+            };
+
+            dns = {
+              magic_dns = true;
+              base_domain = cfg.baseDomain;
+              override_local_dns = true;
+
+              nameservers.global = [
+                "1.1.1.1"
+                "1.0.0.1"
+              ];
+            };
+          };
+        };
+
+        services.hetm = {
+          enable = cfg.hetm.enable;
+
+          inherit (cfg.hetm) audience allow;
+        };
+
+        services.caddy.virtualHosts = {
+          "${cfg.host}".extraConfig = ''
+            reverse_proxy ${config.services.headscale.address}:${toString config.services.headscale.port}
+          '';
+        }
+        // lib.optionalAttrs cfg.hetm.enable {
+          "${cfg.hetm.host}".extraConfig = ''
+            reverse_proxy ${config.services.hetm.address}:${toString config.services.hetm.port}
+          '';
+        };
+      }
+      // lib.optionalAttrs (options.environment ? persistence) {
+        environment.persistence.${config.olympia.persistencePath}.directories = [
+          "/var/lib/headscale"
+        ];
+      };
     };
 
-    options.mySystem.tailscale.authKeyFile = lib.mkOption {
-      type = lib.types.nullOr lib.types.path;
-      default = null;
-      description = "Optional file containing a Headscale pre-authentication key.";
-    };
+  flake.modules.nixos.tailscale =
+    {
+      config,
+      lib,
+      options,
+      ...
+    }:
+    let
+      cfg = config.olympia.tailscale;
+    in
+    {
+      options.olympia.tailscale = {
+        authKeyFile = lib.mkOption {
+          type = lib.types.nullOr lib.types.path;
+          default = null;
+          description = "Optional file containing a pre-authentication key.";
+        };
 
-    config = {
-      services.tailscale = {
-        enable = true;
-        openFirewall = true;
-        authKeyFile = config.mySystem.tailscale.authKeyFile;
-        extraUpFlags =
-          [
-            "--login-server=${headscaleUrl}"
-          ]
-          ++ lib.optional config.mySystem.tailscale.headscaleServer "--accept-dns=false";
+        loginServer = lib.mkOption {
+          type = lib.types.nullOr lib.types.str;
+          default = null;
+          description = "Optional custom coordination server URL.";
+        };
+
+        acceptDns = lib.mkOption {
+          type = lib.types.bool;
+          default = true;
+          description = "Whether Tailscale should accept DNS settings from the coordination server.";
+        };
       };
 
-      environment.persistence."/persist".directories = [
-        "/var/lib/tailscale"
-      ];
+      config = {
+        age.secrets.tailscale-auth-key = lib.mkIf (cfg.authKeyFile != null) {
+          file = cfg.authKeyFile;
+        };
+
+        services.tailscale = {
+          enable = true;
+          openFirewall = true;
+
+          authKeyFile = lib.mkIf (cfg.authKeyFile != null) config.age.secrets.tailscale-auth-key.path;
+
+          extraUpFlags =
+            lib.optional (cfg.loginServer != null) "--login-server=${cfg.loginServer}"
+            ++ lib.optional (!cfg.acceptDns) "--accept-dns=false";
+        };
+      }
+      // lib.optionalAttrs (options.environment ? persistence) {
+        environment.persistence.${config.olympia.persistencePath}.directories = [
+          "/var/lib/tailscale"
+        ];
+      };
     };
-  };
 }

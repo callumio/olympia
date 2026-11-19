@@ -1,52 +1,58 @@
 { inputs, ... }:
 
 {
-  flake.modules.nixos.impermanent = { config, ... }: {
-    imports = [
-      inputs.impermanence.nixosModules.impermanence
-    ];
-    fileSystems."/persist".neededForBoot = true;
+  flake.modules.nixos.impermanent =
+    { config, ... }:
+    let
+      persist = config.olympia.persistencePath;
+    in
+    {
+      imports = [
+        inputs.impermanence.nixosModules.impermanence
+      ];
 
-    boot.initrd.systemd = {
-      services.rollback = {
-        description = "Rollback root filesystem to blank";
+      fileSystems.${persist}.neededForBoot = true;
 
-        wantedBy = [ "initrd.target" ];
+      boot.initrd.systemd = {
+        services.rollback = {
+          description = "Rollback root filesystem to blank";
 
-        after = [
-          "zfs-import-rpool.service"
+          wantedBy = [ "initrd.target" ];
+
+          after = [
+            "zfs-import-rpool.service"
+          ];
+
+          before = [
+            "sysroot.mount"
+          ];
+
+          path = [
+            config.boot.zfs.package
+          ];
+
+          unitConfig.DefaultDependencies = "no";
+
+          serviceConfig.Type = "oneshot";
+
+          script = ''
+            zfs rollback -r rpool/root@blank
+          '';
+        };
+      };
+
+      environment.persistence.${persist} = {
+        hideMounts = true;
+
+        directories = [
+          "/var/lib/nixos"
+          "/var/lib/systemd"
+          "/var/log"
         ];
 
-        before = [
-          "sysroot.mount"
+        files = [
+          "/etc/machine-id"
         ];
-
-        path = [
-          config.boot.zfs.package
-        ];
-
-        unitConfig.DefaultDependencies = "no";
-
-        serviceConfig.Type = "oneshot";
-
-        script = ''
-          zfs rollback -r rpool/root@blank
-        '';
       };
     };
-
-    environment.persistence."/persist" = {
-      hideMounts = true;
-
-      directories = [
-        "/var/lib/nixos"
-        "/var/lib/systemd"
-        "/var/log"
-      ];
-
-      files = [
-        "/etc/machine-id"
-      ];
-    };
-  };
 }

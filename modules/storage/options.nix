@@ -2,7 +2,7 @@ _:
 
 {
   flake.modules.nixos.storage-options = { lib, ... }: {
-    options.mySystem.storage = {
+    options.olympia.storage = {
       disks = lib.mkOption {
         default = { };
         type = lib.types.attrsOf (

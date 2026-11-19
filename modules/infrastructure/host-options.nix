@@ -12,102 +12,14 @@
             ];
           };
 
-          modules = lib.mkOption {
-            type = lib.types.listOf lib.types.deferredModule;
-            default = [ ];
+          module = lib.mkOption {
+            type = lib.types.deferredModule;
+            description = "NixOS module defining this host.";
           };
-
-          headscale = {
-            enable = lib.mkEnableOption "Headscale";
-            proxy.enable = lib.mkEnableOption "Headscale proxy through Caddy";
-          };
-
-          caddy = {
-            enable = lib.mkEnableOption "Caddy";
-
-            virtualHosts = lib.mkOption {
-              type = lib.types.attrs;
-              default = { };
-              description = "Additional Caddy virtual hosts.";
-            };
-          };
-
-          tailscale = {
-            enable = lib.mkEnableOption "Tailscale";
-
-            authKeyFile = lib.mkOption {
-              type = lib.types.nullOr lib.types.path;
-              default = ../../secrets/tailscale-auth-bootstrap-key.age;
-              description = "Override the hostname-derived Tailscale auth key file.";
-            };
-          };
-
-          deploy = {
-            enable = lib.mkEnableOption "deployment";
-
-            hostname = lib.mkOption {
-              type = lib.types.nullOr lib.types.str;
-              default = null;
-            };
-
-            user = lib.mkOption {
-              type = lib.types.str;
-              default = "deploy";
-            };
-            publicKeys = lib.mkOption {
-              type = lib.types.listOf lib.types.str;
-              default = [ ];
-              description = "SSH public keys allowed to deploy to this host.";
-            };
-          };
-
-          timeZone = lib.mkOption {
-            type = lib.types.str;
-            default = "UTC";
-            description = "System timezone.";
-          };
-
-          admins = lib.mkOption {
-            type = lib.types.attrsOf (
-              lib.types.submodule {
-                options = {
-                  description = lib.mkOption {
-                    type = lib.types.str;
-                    default = "";
-                  };
-
-                  extraGroups = lib.mkOption {
-                    type = lib.types.listOf lib.types.str;
-                    default = [ "wheel" ];
-                  };
-
-                  opensshKeys = lib.mkOption {
-                    type = lib.types.listOf lib.types.str;
-                    default = [ ];
-                  };
-                };
-              }
-            );
-
-            default = { };
-          };
-
-          hostId = lib.mkOption {
-            type = lib.types.strMatching "[0-9a-f]{8}";
-            description = "Unique ZFS host ID.";
-          };
-
-          storage = lib.mkOption {
-            type = lib.types.attrs;
-            default = { };
-            description = "Host storage configuration.";
-          };
-
         };
       }
     );
 
     default = { };
   };
-
 }

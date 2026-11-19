@@ -1,5 +1,5 @@
-{config, inputs, ...}: {
-  flake.modules.nixos.core = {pkgs,...}: {
+{ lib, ... }: {
+  flake.modules.nixos.core = { pkgs, ... }: {
     nix = {
       settings = {
         experimental-features = [
@@ -23,8 +23,8 @@
       git
     ];
 
-    age.identityPaths = ["/persist/etc/ssh/ssh_host_ed25519_key"];
+    users.mutableUsers = lib.mkDefault false;
 
-    system.stateVersion = "26.11";
+    system.stateVersion = lib.mkDefault "26.11";
   };
 }

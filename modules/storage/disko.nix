@@ -1,11 +1,11 @@
-_:
+{ inputs, ... }:
 
 {
   flake.modules.nixos.storage-disko =
     { config, lib, ... }:
 
     let
-      storage = config.mySystem.storage;
+      storage = config.olympia.storage;
 
       diskPool =
         diskName:
@@ -93,7 +93,7 @@ _:
 
               persist = {
                 type = "zfs_fs";
-                mountpoint = "/persist";
+                mountpoint = config.olympia.persistencePath;
                 options.mountpoint = "legacy";
                 options.canmount = "on";
               };
@@ -119,6 +119,10 @@ _:
 
     in
     {
+      imports = [
+        inputs.disko.nixosModules.disko
+      ];
+
       disko.devices = {
         disk = diskConfigs;
         zpool = poolConfigs;

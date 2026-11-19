@@ -4,8 +4,6 @@ _: {
       (modulesPath + "/profiles/qemu-guest.nix")
     ];
 
-    nixpkgs.hostPlatform = "aarch64-linux";
-
     boot.initrd.availableKernelModules = [
       "ata_piix"
       "uhci_hcd"
@@ -15,17 +13,17 @@ _: {
 
     boot.tmp.cleanOnBoot = true;
     boot.loader = {
-  efi = {
-    canTouchEfiVariables = false;
-    efiSysMountPoint = "/boot";
-  };
+      efi = {
+        canTouchEfiVariables = false;
+        efiSysMountPoint = "/boot";
+      };
 
-  grub = {
-    enable = true;
-    efiSupport = true;
-    efiInstallAsRemovable = true;
-    devices = [ "nodev" ];
-  };
-};
+      grub = {
+        enable = true;
+        efiSupport = true;
+        efiInstallAsRemovable = true;
+        devices = [ "nodev" ];
+      };
+    };
   };
 }
