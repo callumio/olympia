@@ -1,13 +1,10 @@
-{ config, ... }:
-
-let
+{config, ...}: let
   modules = config.flake.modules.nixos;
-in
-{
+in {
   hosts.heimdall = {
     system = "aarch64-linux";
 
-    module = { config, ... }: {
+    module = {config, ...}: {
       imports = [
         modules.base
         modules.core
@@ -29,7 +26,9 @@ in
         hetm = {
           audience = "hetm.cleslie.uk";
           host = "hetm.cleslie.uk";
-          allow = [ "repo:callumio/olympia:ref:refs/heads/main" ];
+          allow = [
+            "repo:callumio@16057677/olympia@1456726824:ref:refs/heads/main"
+          ];
         };
       };
 
@@ -42,7 +41,7 @@ in
 
       olympia.admins.admin = {
         description = "Admin user";
-        extraGroups = [ "wheel" ];
+        extraGroups = ["wheel"];
         opensshKeys = [
           "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHW89GwFXo01iKQKY6NVRTN61/1SIoYhN3sAo18hLY17 ssh@cleslie.uk"
         ];
@@ -52,7 +51,7 @@ in
       olympia.deploy = {
         enable = true;
         hostname = "heimdall.net.cleslie.uk";
-        publicKeys = [ ];
+        publicKeys = [];
         sshOpts = [
           "-o"
           "StrictHostKeyChecking=accept-new"
@@ -67,7 +66,7 @@ in
 
         pools.rpool = {
           mode = "single";
-          members = [ "main" ];
+          members = ["main"];
           profile = "impermanent";
         };
       };
