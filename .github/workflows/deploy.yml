@@ -113,6 +113,7 @@ jobs:
         with:
           authkey: ${{ steps.tailscale.outputs.key }}
           hostname: gh-${{ github.run_id }}-${{ matrix.host }}
+          args: --login-server=https://headscale.cleslie.uk
 
       - name: Deploy ${{ matrix.host }}
         run: nix run .#deploy -- --remote-build .#${{ matrix.host }}
