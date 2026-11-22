@@ -1,10 +1,12 @@
-{config, ...}: let
+{ config, ... }:
+let
   modules = config.flake.modules.nixos;
-in {
+in
+{
   hosts.atlas = {
     system = "x86_64-linux";
 
-    module = {...}: {
+    module = { ... }: {
       imports = [
         modules.base
         modules.core
@@ -23,7 +25,7 @@ in {
 
       olympia.admins.admin = {
         description = "Admin user";
-        extraGroups = ["wheel"];
+        extraGroups = [ "wheel" ];
         opensshKeys = [
           "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHW89GwFXo01iKQKY6NVRTN61/1SIoYhN3sAo18hLY17 ssh@cleslie.uk"
         ];
@@ -32,7 +34,7 @@ in {
       olympia.deploy = {
         enable = true;
         hostname = "atlas";
-        publicKeys = [];
+        publicKeys = [ ];
       };
 
       olympia.storage = {
@@ -51,7 +53,7 @@ in {
         pools = {
           rpool = {
             mode = "single";
-            members = ["boot"];
+            members = [ "boot" ];
             profile = "impermanent";
           };
 

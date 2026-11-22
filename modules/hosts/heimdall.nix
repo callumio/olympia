@@ -21,6 +21,7 @@ in
           modules.headscale
           modules.tailscale
           modules.homepage
+          modules.zeroclaw
           modules.zfs
           modules.impermanent
         ];
@@ -56,6 +57,11 @@ in
           enable = true;
           host = "homepage.cleslie.uk";
           title = "Olympia";
+        };
+
+        olympia.zeroclaw = {
+          enable = true;
+          telegram.allowedUsers = [ "7949736921" ];
         };
 
         olympia.admins.admin = {

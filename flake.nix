@@ -36,6 +36,11 @@
         flake-parts.follows = "flake-parts";
       };
     };
+
+    zeroclaw = {
+      url = "github:zeroclaw-labs/zeroclaw";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
   outputs =
     inputs:

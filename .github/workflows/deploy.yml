@@ -27,7 +27,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          # Need the pre-push commit object so `nix eval git+file://...?rev=$base` resolves.
+          fetch-depth: 0
 
       - uses: cachix/install-nix-action@v31
         with:
@@ -38,17 +39,27 @@ jobs:
         id: plan
         env:
           FORCE: ${{ inputs.force }}
+          BEFORE: ${{ github.event.before }}
         run: |
           set -euo pipefail
 
           all=$(nix eval --json .#deploy.nodes --apply builtins.attrNames)
           echo "Deployable hosts: $all"
 
-          if [[ "${FORCE:-false}" == "true" ]] || ! git rev-parse --verify --quiet HEAD~1 >/dev/null; then
+          # Compare against the tip of main before this push, so a push containing
+          # several commits deploys everything changed across the whole batch.
+          base=""
+          if [[ -n "${BEFORE:-}" && "$BEFORE" != "0000000000000000000000000000000000000000" ]] \
+             && git rev-parse --verify --quiet "${BEFORE}^{commit}" >/dev/null; then
+            base="$BEFORE"
+          elif git rev-parse --verify --quiet HEAD~1 >/dev/null; then
+            base=$(git rev-parse HEAD~1)
+          fi
+
+          if [[ "${FORCE:-false}" == "true" || -z "$base" ]]; then
+            echo "Forcing deploy of every host (force=${FORCE:-false}, base=${base:-none})"
             changed="$all"
           else
-            base=$(git rev-parse HEAD~1)
-
             current=$(nix eval --json .#nixosConfigurations \
               --apply 'hosts: builtins.mapAttrs (_: h: h.config.system.build.toplevel.drvPath) hosts')
 

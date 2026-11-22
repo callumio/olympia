@@ -11,4 +11,8 @@ in
     heimdall
     admin
   ];
+  "zeroclaw-env.age".publicKeys = [
+    heimdall
+    admin
+  ];
 }
