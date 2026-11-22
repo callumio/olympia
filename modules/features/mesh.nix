@@ -122,6 +122,12 @@ in
             "/var/lib/headscale"
           ];
         })
+        (lib.optionalAttrs (options ? olympia.homepage) {
+          olympia.homepage.entries = {
+            ${cfg.host}.enable = false;
+            ${cfg.hetm.host}.enable = false;
+          };
+        })
       ];
     };
 

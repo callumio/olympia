@@ -20,6 +20,7 @@ in
           modules.oracle-ampere
           modules.headscale
           modules.tailscale
+          modules.homepage
           modules.zfs
           modules.impermanent
         ];
@@ -49,6 +50,12 @@ in
           loginServer = "https://${config.olympia.headscale.host}";
           acceptDns = false;
           ssh = true;
+        };
+
+        olympia.homepage = {
+          enable = true;
+          host = "homepage.cleslie.uk";
+          title = "Olympia";
         };
 
         olympia.admins.admin = {

@@ -238,6 +238,37 @@ This keeps the service self-contained and reusable.
 - For internal-only services, skip Caddy and expose them over Tailscale/Headscale instead.
 - `services.caddy.email` is not set by the caddy module. Set it in the host module if you want ACME account emails.
 
+### Homepage entries
+
+`modules/services/homepage.nix` runs [Homepage](https://gethomepage.dev) behind
+Caddy. Every Caddy virtual host becomes a Homepage service entry by default, so
+a new public service is linked automatically. The entry key is the virtual host
+name.
+
+Override an entry in the host module:
+
+```nix
+olympia.homepage.entries."vault.example.com" = {
+  name = "Vaultwarden";
+  description = "Passwords and secrets";
+  icon = "vaultwarden.png";
+};
+```
+
+Set `enable = false` for a virtual host that has no web UI. That is what
+`modules/features/mesh.nix` does for Headscale and hetm. The optional
+`settings` attribute is passed through as raw Homepage service settings.
+
+You can also add an entry that is not fronted by Caddy by using an arbitrary
+key and setting `href`:
+
+```nix
+olympia.homepage.entries.grafana = {
+  name = "Grafana";
+  href = "https://grafana.example.com";
+};
+```
+
 ---
 
 ## 4. Persist state
@@ -425,6 +456,7 @@ Notes:
 - [ ] Defaults use `lib.mkDefault` where hosts may override.
 - [ ] Module imported by the intended host(s).
 - [ ] Caddy vhost added if the service is public.
+- [ ] Homepage entry named/iconified via `olympia.homepage.entries`, or disabled if the service has no UI.
 - [ ] Service binds to `127.0.0.1` when behind Caddy.
 - [ ] State directory added to `environment.persistence` if the host is impermanent.
 - [ ] Secret added to `secrets/secrets.nix` and encrypted with `agenix`.
