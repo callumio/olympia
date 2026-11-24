@@ -5,7 +5,6 @@ in {
     system = "aarch64-linux";
 
     module = {
-      config,
       pkgs,
       ...
     }: {
@@ -29,22 +28,16 @@ in {
         hello
       ];
 
-      olympia.headscale = {
-        host = "headscale.cleslie.uk";
-        baseDomain = "net.cleslie.uk";
-
-        hetm = {
-          audience = "hetm.cleslie.uk";
-          host = "hetm.cleslie.uk";
-          allow = [
-            "repo:callumio@16057677/olympia@1456726824:ref:refs/heads/main"
-          ];
-        };
+      olympia.headscale.hetm = {
+        audience = "hetm.cleslie.uk";
+        host = "hetm.cleslie.uk";
+        allow = [
+          "repo:callumio@16057677/olympia@1456726824:ref:refs/heads/main"
+        ];
       };
 
       olympia.tailscale = {
         authKeyFile = ../../secrets/tailscale-auth-bootstrap-key.age;
-        loginServer = "https://${config.olympia.headscale.host}";
         acceptDns = false;
         ssh = true;
       };

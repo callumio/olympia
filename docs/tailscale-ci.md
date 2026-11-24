@@ -68,7 +68,6 @@ that do not prompt in CI. `modules/hosts/heimdall.nix` is the reference:
 ```nix
 olympia.tailscale = {
   authKeyFile = ../../secrets/tailscale-auth-bootstrap-key.age;
-  loginServer = "https://${config.olympia.headscale.host}";
   acceptDns = false;
   ssh = true;
 };
@@ -80,6 +79,12 @@ olympia.deploy = {
   sshOpts = [ "-o" "StrictHostKeyChecking=accept-new" ];
 };
 ```
+
+`olympia.tailscale.loginServer`, `olympia.headscale.host`, and
+`olympia.headscale.baseDomain` default to the mesh-wide values in
+`modules/features/mesh.nix`, so hosts only override them when joining a
+different Headscale instance. Set `loginServer = null` to use Tailscale's
+hosted service instead.
 
 `olympia.tailscale.ssh` adds `--ssh` to `tailscale up`. NixOS only applies
 `extraUpFlags` when `authKeyFile` is set, so that option requires an auth key.

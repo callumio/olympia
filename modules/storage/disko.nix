@@ -30,9 +30,16 @@
             type = "gpt";
 
             partitions =
-              (lib.optionalAttrs disk.efi {
+              (lib.optionalAttrs disk.biosBoot {
+                BIOS = {
+                  size = "1M";
+                  type = "EF02";
+                  attributes = [ 0 ];
+                };
+              })
+              // (lib.optionalAttrs disk.efi {
                 ESP = {
-                  size = "512M";
+                  size = "1G";
                   type = "EF00";
 
                   content = {

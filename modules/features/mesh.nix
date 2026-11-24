@@ -4,6 +4,13 @@
   ...
 }: let
   caddyModule = config.flake.modules.nixos.caddy;
+
+  # Mesh-wide settings shared by every host. Hosts only override these when
+  # deliberately joining a different Headscale instance.
+  mesh = {
+    headscaleHost = "headscale.cleslie.uk";
+    baseDomain = "net.cleslie.uk";
+  };
 in {
   flake.modules.nixos.headscale = {
     config,
@@ -22,14 +29,14 @@ in {
     options.olympia.headscale = {
       host = lib.mkOption {
         type = lib.types.str;
+        default = mesh.headscaleHost;
         description = "Public hostname used by Headscale.";
-        default = "headscale.cleslie.uk";
       };
 
       baseDomain = lib.mkOption {
         type = lib.types.str;
+        default = mesh.baseDomain;
         description = "MagicDNS base domain.";
-        default = "net.cleslie.uk";
       };
 
       hetm = {
@@ -146,8 +153,8 @@ in {
 
       loginServer = lib.mkOption {
         type = lib.types.nullOr lib.types.str;
-        default = null;
-        description = "Optional custom coordination server URL.";
+        default = "https://${mesh.headscaleHost}";
+        description = "Coordination server URL. Defaults to the shared Headscale host; set to null to use Tailscale's hosted service.";
       };
 
       acceptDns = lib.mkOption {

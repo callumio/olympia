@@ -15,6 +15,13 @@ _:
               efi = lib.mkOption {
                 type = lib.types.bool;
                 default = false;
+                description = "Create a FAT32 boot partition for /boot.";
+              };
+
+              biosBoot = lib.mkOption {
+                type = lib.types.bool;
+                default = false;
+                description = "Create a BIOS boot partition for GRUB on legacy BIOS systems.";
               };
             };
           }

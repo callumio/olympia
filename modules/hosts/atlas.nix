@@ -4,11 +4,7 @@ in {
   hosts.atlas = {
     system = "x86_64-linux";
 
-    module = {
-      config,
-      pkgs,
-      ...
-    }: {
+    module = {...}: {
       imports = [
         modules.base
         modules.core
@@ -21,10 +17,13 @@ in {
       networking.hostId = "3b879400";
       time.timeZone = "Europe/London";
 
-      boot.loader = {
-        systemd-boot.enable = true;
-        efi.canTouchEfiVariables = true;
+      boot.loader.grub = {
+        enable = true;
+        efiSupport = false;
+        configurationLimit = 5;
       };
+
+      boot.zfs.extraPools = ["tank"];
 
       olympia.tailscale = {
         authKeyFile = ../../secrets/tailscale-auth-bootstrap-key.age;
@@ -56,6 +55,7 @@ in {
           boot = {
             device = "/dev/disk/by-id/ata-Samsung_SSD_840_EVO_120GB_S1D5NSAF662893M";
             efi = true;
+            biosBoot = true;
           };
 
           data1.device = "/dev/disk/by-id/wwn-0x5000cca2677638a4";
