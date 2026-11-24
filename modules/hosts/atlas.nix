@@ -27,7 +27,6 @@ in {
 
       olympia.tailscale = {
         authKeyFile = ../../secrets/tailscale-auth-bootstrap-key.age;
-        acceptDns = false;
         ssh = true;
       };
 
