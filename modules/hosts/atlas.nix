@@ -4,7 +4,11 @@ in {
   hosts.atlas = {
     system = "x86_64-linux";
 
-    module = {...}: {
+    module = {
+      config,
+      pkgs,
+      ...
+    }: {
       imports = [
         modules.base
         modules.core
