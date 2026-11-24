@@ -28,7 +28,6 @@ in {
 
       olympia.tailscale = {
         authKeyFile = ../../secrets/tailscale-auth-bootstrap-key.age;
-        loginServer = "https://${config.olympia.headscale.host}";
         acceptDns = false;
         ssh = true;
       };
