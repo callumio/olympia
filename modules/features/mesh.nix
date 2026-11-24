@@ -2,7 +2,8 @@
   config,
   inputs,
   ...
-}: let
+}:
+let
   caddyModule = config.flake.modules.nixos.caddy;
 
   # Mesh-wide settings shared by every host. Hosts only override these when
@@ -11,107 +12,110 @@
     headscaleHost = "headscale.cleslie.uk";
     baseDomain = "net.cleslie.uk";
   };
-in {
-  flake.modules.nixos.headscale = {
-    config,
-    lib,
-    options,
-    pkgs,
-    ...
-  }: let
-    cfg = config.olympia.headscale;
-  in {
-    imports = [
-      caddyModule
-      inputs.forge.nixosModules.hetm
-    ];
+in
+{
+  flake.modules.nixos.headscale =
+    {
+      config,
+      lib,
+      options,
+      pkgs,
+      ...
+    }:
+    let
+      cfg = config.olympia.headscale;
+    in
+    {
+      imports = [
+        caddyModule
+        inputs.forge.nixosModules.hetm
+      ];
 
-    options.olympia.headscale = {
-      host = lib.mkOption {
-        type = lib.types.str;
-        default = mesh.headscaleHost;
-        description = "Public hostname used by Headscale.";
-      };
-
-      baseDomain = lib.mkOption {
-        type = lib.types.str;
-        default = mesh.baseDomain;
-        description = "MagicDNS base domain.";
-      };
-
-      hetm = {
-        enable = lib.mkOption {
-          type = lib.types.bool;
-          default = true;
-          description = "Enable the Headscale pre-authentication key minter.";
-        };
-
-        audience = lib.mkOption {
-          type = lib.types.str;
-          description = "OIDC audience for hetm.";
-        };
-
+      options.olympia.headscale = {
         host = lib.mkOption {
           type = lib.types.str;
-          description = "Public hostname used by hetm.";
+          default = mesh.headscaleHost;
+          description = "Public hostname used by Headscale.";
         };
 
-        allow = lib.mkOption {
-          type = lib.types.listOf lib.types.str;
-          default = [];
-          description = "Allowed OIDC subject patterns.";
+        baseDomain = lib.mkOption {
+          type = lib.types.str;
+          default = mesh.baseDomain;
+          description = "MagicDNS base domain.";
         };
-      };
-    };
 
-    config = lib.mkMerge [
-      {
-        environment.etc."headscale/policy.hujson".source = ./headscale-policy.json;
+        hetm = {
+          enable = lib.mkOption {
+            type = lib.types.bool;
+            default = true;
+            description = "Enable the Headscale pre-authentication key minter.";
+          };
 
-        services.headscale = {
-          enable = true;
-          address = "127.0.0.1";
-          port = 8080;
+          audience = lib.mkOption {
+            type = lib.types.str;
+            description = "OIDC audience for hetm.";
+          };
 
-          settings = {
-            server_url = "https://${cfg.host}";
+          host = lib.mkOption {
+            type = lib.types.str;
+            description = "Public hostname used by hetm.";
+          };
 
-            policy = {
-              mode = "file";
-              path = "/etc/headscale/policy.hujson";
-            };
-
-            prefixes = {
-              v4 = "100.64.0.0/10";
-            };
-
-            dns = {
-              magic_dns = true;
-              base_domain = cfg.baseDomain;
-              override_local_dns = true;
-
-              nameservers.global = [
-                "1.1.1.1"
-                "1.0.0.1"
-              ];
-            };
-            unix_socket_permission = "0770";
+          allow = lib.mkOption {
+            type = lib.types.listOf lib.types.str;
+            default = [ ];
+            description = "Allowed OIDC subject patterns.";
           };
         };
+      };
 
-        systemd.services.headscale = {
-          serviceConfig.ExecReload = "${pkgs.coreutils}/bin/kill -HUP $MAINPID";
-          reloadTriggers = [./headscale-policy.json];
-        };
+      config = lib.mkMerge [
+        {
+          environment.etc."headscale/policy.hujson".source = ./headscale-policy.json;
 
-        services.hetm = {
-          enable = cfg.hetm.enable;
+          services.headscale = {
+            enable = true;
+            address = "127.0.0.1";
+            port = 8080;
 
-          inherit (cfg.hetm) audience allow;
-        };
+            settings = {
+              server_url = "https://${cfg.host}";
 
-        services.caddy.virtualHosts =
-          {
+              policy = {
+                mode = "file";
+                path = "/etc/headscale/policy.hujson";
+              };
+
+              prefixes = {
+                v4 = "100.64.0.0/10";
+              };
+
+              dns = {
+                magic_dns = true;
+                base_domain = cfg.baseDomain;
+                override_local_dns = true;
+
+                nameservers.global = [
+                  "1.1.1.1"
+                  "1.0.0.1"
+                ];
+              };
+              unix_socket_permission = "0770";
+            };
+          };
+
+          systemd.services.headscale = {
+            serviceConfig.ExecReload = "${pkgs.coreutils}/bin/kill -HUP $MAINPID";
+            reloadTriggers = [ ./headscale-policy.json ];
+          };
+
+          services.hetm = {
+            enable = cfg.hetm.enable;
+
+            inherit (cfg.hetm) audience allow;
+          };
+
+          services.caddy.virtualHosts = {
             "${cfg.host}".extraConfig = ''
               reverse_proxy ${config.services.headscale.address}:${toString config.services.headscale.port}
             '';
@@ -121,87 +125,90 @@ in {
               reverse_proxy ${config.services.hetm.address}:${toString config.services.hetm.port}
             '';
           };
-      }
-      (lib.optionalAttrs (options.environment ? persistence) {
-        environment.persistence.${config.olympia.persistencePath}.directories = [
-          "/var/lib/headscale"
-        ];
-      })
-      (lib.optionalAttrs (options ? olympia.homepage) {
-        olympia.homepage.entries = {
-          ${cfg.host}.enable = false;
-          ${cfg.hetm.host}.enable = false;
-        };
-      })
-    ];
-  };
-
-  flake.modules.nixos.tailscale = {
-    config,
-    lib,
-    options,
-    ...
-  }: let
-    cfg = config.olympia.tailscale;
-  in {
-    options.olympia.tailscale = {
-      authKeyFile = lib.mkOption {
-        type = lib.types.nullOr lib.types.path;
-        default = null;
-        description = "Optional file containing a pre-authentication key.";
-      };
-
-      loginServer = lib.mkOption {
-        type = lib.types.nullOr lib.types.str;
-        default = "https://${mesh.headscaleHost}";
-        description = "Coordination server URL. Defaults to the shared Headscale host; set to null to use Tailscale's hosted service.";
-      };
-
-      acceptDns = lib.mkOption {
-        type = lib.types.bool;
-        default = true;
-        description = "Whether Tailscale should accept DNS settings from the coordination server.";
-      };
-
-      ssh = lib.mkOption {
-        type = lib.types.bool;
-        default = false;
-        description = ''
-          Whether Tailscale SSH should serve SSH on the tailnet address.
-          This only takes effect when {option}`authKeyFile` is set, because
-          NixOS only applies `extraUpFlags` during auth-key login.
-        '';
-      };
+        }
+        (lib.optionalAttrs (options.environment ? persistence) {
+          environment.persistence.${config.olympia.persistencePath}.directories = [
+            "/var/lib/headscale"
+          ];
+        })
+        (lib.optionalAttrs (options ? olympia.homepage) {
+          olympia.homepage.entries = {
+            ${cfg.host}.enable = false;
+            ${cfg.hetm.host}.enable = false;
+          };
+        })
+      ];
     };
 
-    config = lib.mkMerge [
-      {
-        assertions = lib.optional cfg.ssh {
-          assertion = cfg.authKeyFile != null;
-          message = "olympia.tailscale.ssh requires olympia.tailscale.authKeyFile, because NixOS only applies extraUpFlags during auth-key login.";
+  flake.modules.nixos.tailscale =
+    {
+      config,
+      lib,
+      options,
+      ...
+    }:
+    let
+      cfg = config.olympia.tailscale;
+    in
+    {
+      options.olympia.tailscale = {
+        authKeyFile = lib.mkOption {
+          type = lib.types.nullOr lib.types.path;
+          default = null;
+          description = "Optional file containing a pre-authentication key.";
         };
 
-        age.secrets.tailscale-auth-key = lib.mkIf (cfg.authKeyFile != null) {
-          file = cfg.authKeyFile;
+        loginServer = lib.mkOption {
+          type = lib.types.nullOr lib.types.str;
+          default = "https://${mesh.headscaleHost}";
+          description = "Coordination server URL. Defaults to the shared Headscale host; set to null to use Tailscale's hosted service.";
         };
 
-        services.tailscale = {
-          enable = true;
-          openFirewall = true;
-
-          authKeyFile = lib.mkIf (cfg.authKeyFile != null) config.age.secrets.tailscale-auth-key.path;
-
-          extraUpFlags =
-            lib.optional (cfg.loginServer != null) "--login-server=${cfg.loginServer}"
-            ++ lib.optional (!cfg.acceptDns) "--accept-dns=false"
-            ++ lib.optional cfg.ssh "--ssh";
+        acceptDns = lib.mkOption {
+          type = lib.types.bool;
+          default = true;
+          description = "Whether Tailscale should accept DNS settings from the coordination server.";
         };
-      }
-      (lib.optionalAttrs (options.environment ? persistence) {
-        environment.persistence.${config.olympia.persistencePath}.directories = [
-          "/var/lib/tailscale"
-        ];
-      })
-    ];
-  };
+
+        ssh = lib.mkOption {
+          type = lib.types.bool;
+          default = false;
+          description = ''
+            Whether Tailscale SSH should serve SSH on the tailnet address.
+            This only takes effect when {option}`authKeyFile` is set, because
+            NixOS only applies `extraUpFlags` during auth-key login.
+          '';
+        };
+      };
+
+      config = lib.mkMerge [
+        {
+          assertions = lib.optional cfg.ssh {
+            assertion = cfg.authKeyFile != null;
+            message = "olympia.tailscale.ssh requires olympia.tailscale.authKeyFile, because NixOS only applies extraUpFlags during auth-key login.";
+          };
+
+          age.secrets.tailscale-auth-key = lib.mkIf (cfg.authKeyFile != null) {
+            file = cfg.authKeyFile;
+          };
+
+          services.tailscale = {
+            enable = true;
+            openFirewall = true;
+
+            authKeyFile = lib.mkIf (cfg.authKeyFile != null) config.age.secrets.tailscale-auth-key.path;
+
+            extraUpFlags =
+              lib.optional (cfg.loginServer != null) "--login-server=${cfg.loginServer}"
+              ++ lib.optional (!cfg.acceptDns) "--accept-dns=false"
+              ++ lib.optional cfg.ssh "--ssh";
+          };
+        }
+        (lib.optionalAttrs (options.environment ? persistence) {
+          environment.persistence.${config.olympia.persistencePath}.directories = [
+            "/var/lib/tailscale"
+          ];
+        })
+      ];
+    };
 }
