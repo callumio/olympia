@@ -12,6 +12,8 @@ in
         modules.core
         modules.ssh
         modules.tailscale
+        modules.arr
+        modules.nfs
         modules.zfs
         modules.impermanent
       ];
@@ -99,6 +101,17 @@ in
                 options = {
                   recordsize = "1M";
                   compression = "lz4";
+                  xattr = "sa";
+                  acltype = "posixacl";
+                  snapdir = "hidden";
+                };
+              };
+
+              cloud = {
+                mountpoint = "/tank/cloud";
+                options = {
+                  recordsize = "128K";
+                  compression = "zstd";
                   xattr = "sa";
                   acltype = "posixacl";
                   snapdir = "hidden";
