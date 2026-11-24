@@ -64,50 +64,66 @@
         }
       ) storage.disks;
 
-      poolConfigs = lib.mapAttrs (poolName: pool: {
-        type = "zpool";
-
-        mode = if pool.mode == "single" then "" else pool.mode;
-
-        options.ashift = "12";
-
-        rootFsOptions = {
-          compression = "zstd";
-          atime = "off";
-          mountpoint = "none";
-        };
-
-        datasets =
-          if pool.profile == "impermanent" then
-            {
-              root = {
-                type = "zfs_fs";
-                mountpoint = "/";
-                options.mountpoint = "legacy";
-
-                postCreateHook = ''
-                  zfs list -t snapshot -H -o name |
-                    grep -qx '${poolName}/root@blank' ||
-                    zfs snapshot ${poolName}/root@blank
-                '';
-              };
-
-              nix = {
-                type = "zfs_fs";
-                mountpoint = "/nix";
-                options.mountpoint = "legacy";
-              };
-
-              persist = {
-                type = "zfs_fs";
-                mountpoint = config.olympia.persistencePath;
-                options.mountpoint = "legacy";
-                options.canmount = "on";
-              };
+      poolConfigs = lib.mapAttrs (
+        poolName: pool:
+        let
+          extraDatasets = lib.mapAttrs (_: dataset: {
+            type = "zfs_fs";
+            inherit (dataset) mountpoint;
+            options = {
+              mountpoint = if dataset.mountpoint == null then "none" else "legacy";
             }
-          else
-            { };
-      }) storage.pools;
+            // dataset.options;
+          }) pool.datasets;
+        in
+        {
+          type = "zpool";
+
+          mode = if pool.mode == "single" then "" else pool.mode;
+
+          options.ashift = "12";
+
+          rootFsOptions = {
+            compression = "zstd";
+            atime = "off";
+            mountpoint = "none";
+          };
+
+          datasets =
+            (
+              if pool.profile == "impermanent" then
+                {
+                  root = {
+                    type = "zfs_fs";
+                    mountpoint = "/";
+                    options.mountpoint = "legacy";
+
+                    postCreateHook = ''
+                      zfs list -t snapshot -H -o name |
+                        grep -qx '${poolName}/root@blank' ||
+                        zfs snapshot ${poolName}/root@blank
+                    '';
+                  };
+
+                  nix = {
+                    type = "zfs_fs";
+                    mountpoint = "/nix";
+                    options.mountpoint = "legacy";
+                  };
+
+                  persist = {
+                    type = "zfs_fs";
+                    mountpoint = config.olympia.persistencePath;
+                    options.mountpoint = "legacy";
+                    options.canmount = "on";
+                  };
+                }
+              else
+                { }
+            )
+            // extraDatasets;
+        }
+      ) storage.pools;
 
       poolAssertions = lib.mapAttrsToList (name: pool: {
         assertion =

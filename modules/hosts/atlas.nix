@@ -81,6 +81,38 @@ in
               "data4"
             ];
             profile = "none";
+
+            datasets = {
+              media = {
+                mountpoint = "/tank/media";
+                options = {
+                  recordsize = "1M";
+                  compression = "lz4";
+                  xattr = "sa";
+                  acltype = "posixacl";
+                  snapdir = "hidden";
+                };
+              };
+
+              photos = {
+                mountpoint = "/tank/photos";
+                options = {
+                  recordsize = "1M";
+                  compression = "lz4";
+                  xattr = "sa";
+                  acltype = "posixacl";
+                  snapdir = "hidden";
+                };
+              };
+
+              backup = {
+                mountpoint = "/tank/backup";
+                options = {
+                  recordsize = "1M";
+                  compression = "zstd";
+                };
+              };
+            };
           };
         };
       };

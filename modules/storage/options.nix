@@ -52,6 +52,28 @@ _:
                 ];
                 default = "none";
               };
+
+              datasets = lib.mkOption {
+                default = { };
+                description = "Extra ZFS datasets for this pool.";
+                type = lib.types.attrsOf (
+                  lib.types.submodule {
+                    options = {
+                      mountpoint = lib.mkOption {
+                        type = lib.types.nullOr lib.types.str;
+                        default = null;
+                        description = "Path to mount the dataset to. Null creates the dataset without a mount point.";
+                      };
+
+                      options = lib.mkOption {
+                        type = lib.types.attrsOf lib.types.str;
+                        default = { };
+                        description = "ZFS dataset properties, for example recordsize or compression.";
+                      };
+                    };
+                  }
+                );
+              };
             };
           }
         );
