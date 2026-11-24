@@ -7,6 +7,7 @@
       url = "github:numtide/treefmt-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    git-hooks.url = "github:cachix/git-hooks.nix";
 
     agenix.url = "github:ryantm/agenix";
     agenix-rekey = {
