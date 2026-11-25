@@ -21,8 +21,4 @@ in
     heimdall
     admin
   ];
-  "qui-session-secret.age".publicKeys = [
-    atlas
-    admin
-  ];
 }

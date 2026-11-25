@@ -12,7 +12,7 @@ in
         modules.core
         modules.ssh
         modules.tailscale
-        modules.arr
+        modules.nixarr
         modules.nfs
         modules.zfs
         modules.impermanent
