@@ -17,6 +17,10 @@ in
     heimdall
     admin
   ];
+  "wg-conf.age".publicKeys = [
+    atlas
+    admin
+  ];
   "zeroclaw-env.age".publicKeys = [
     heimdall
     admin

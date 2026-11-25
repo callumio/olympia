@@ -14,6 +14,9 @@
       # qBittorrent's internal API lives on the VPN namespace bridge when
       # confinement is enabled, and on localhost otherwise.
       qbitHost = if config.nixarr.qbittorrent.vpn.enable then "192.168.15.1" else "127.0.0.1";
+
+      # Strongly prefer x265/HEVC releases without making them mandatory.
+      x265Score = 1000;
     in
     {
       imports = [
@@ -26,6 +29,11 @@
         # Media and persistent state live on the tank/persist datasets.
         mediaDir = "/tank/media";
         stateDir = "/persist/nixarr";
+
+        vpn = {
+          enable = true;
+          wgConf = config.age.secrets.wg-conf.path;
+        };
 
         sonarr = {
           enable = true;
@@ -77,7 +85,9 @@
         qbittorrent = {
           enable = true;
           qui.enable = true;
-          # vpn.enable = true; # enable once nixarr.vpn.wgConf is configured
+          vpn.enable = true;
+          # No forwarded peer port from the VPN provider. qBittorrent will
+          # still download/seed outbound, but it will not be connectable.
         };
 
         recyclarr = {
@@ -87,12 +97,90 @@
               base_url = "http://127.0.0.1:8989";
               api_key = "!env_var SONARR_API_KEY";
               quality_definition.type = "series";
+
+              # Qualities below 1080p are omitted, which disables them.
+              quality_profiles = [
+                {
+                  name = "HD-1080p";
+                  quality_sort = "top";
+                  min_format_score = 0;
+                  upgrade = {
+                    allowed = true;
+                    until_quality = "Bluray-1080p";
+                    until_score = x265Score;
+                  };
+                  qualities = [
+                    { name = "Bluray-1080p Remux"; }
+                    { name = "Bluray-1080p"; }
+                    {
+                      name = "WEB 1080p";
+                      qualities = [
+                        "WEBRip-1080p"
+                        "WEBDL-1080p"
+                      ];
+                    }
+                    { name = "HDTV-1080p"; }
+                  ];
+                }
+              ];
+
+              custom_formats = [
+                {
+                  # TRaSH "x265 (HD)" custom format.
+                  trash_ids = [ "47435ece6b99a0b477caf360e79ba0bb" ];
+                  assign_scores_to = [
+                    {
+                      name = "HD-1080p";
+                      score = x265Score;
+                    }
+                  ];
+                }
+              ];
             };
 
             radarr.movies = {
               base_url = "http://127.0.0.1:7878";
               api_key = "!env_var RADARR_API_KEY";
               quality_definition.type = "movie";
+
+              # Qualities below 1080p are omitted, which disables them.
+              quality_profiles = [
+                {
+                  name = "HD-1080p";
+                  quality_sort = "top";
+                  min_format_score = 0;
+                  upgrade = {
+                    allowed = true;
+                    until_quality = "Bluray-1080p";
+                    until_score = x265Score;
+                  };
+                  qualities = [
+                    { name = "Remux-1080p"; }
+                    { name = "Bluray-1080p"; }
+                    {
+                      name = "WEB 1080p";
+                      qualities = [
+                        "WEBRip-1080p"
+                        "WEBDL-1080p"
+                      ];
+                    }
+                    { name = "HDTV-1080p"; }
+                  ];
+                }
+              ];
+
+              custom_formats = [
+                {
+                  # TRaSH "x265 (HD)" custom format.
+                  trash_ids = [ "dc98083864ea246d05a42df0d05f81cc" ];
+                  assign_scores_to = [
+                    {
+                      name = "HD-1080p";
+                      score = x265Score;
+                    }
+                  ];
+                }
+              ];
             };
           };
         };
@@ -151,6 +239,11 @@
 
       # qBittorrent otherwise creates group-readable-only files.
       systemd.services.qbittorrent.serviceConfig.UMask = "0002";
+
+      age.secrets.wg-conf = {
+        file = ../../secrets/wg-conf.age;
+        mode = "0400";
+      };
 
       # FlareSolverr is used by Prowlarr only. It listens locally; Prowlarr is
       # configured with http://127.0.0.1:8191 under Indexer Proxies.
