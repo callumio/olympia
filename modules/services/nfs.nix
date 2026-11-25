@@ -9,8 +9,10 @@ _:
     {
       # NFSv4 pseudo-root. The client sees /media and /photos; the bind mounts
       # keep the public export tree separate from /tank/backup.
+      # /media is the library only. qBittorrent's download area stays local to
+      # atlas and is deliberately not exported.
       fileSystems."/srv/nfs/media" = {
-        device = "/tank/media";
+        device = "/tank/media/library";
         fsType = "none";
         options = [
           "bind"
