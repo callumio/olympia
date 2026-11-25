@@ -5,7 +5,11 @@
 
 {
   flake.modules.nixos.nixarr =
-    { config, ... }:
+    {
+      config,
+      pkgs,
+      ...
+    }:
     let
       # qBittorrent's internal API lives on the VPN namespace bridge when
       # confinement is enabled, and on localhost otherwise.
@@ -103,6 +107,35 @@
       systemd.tmpfiles.rules = [
         "d /persist/nixarr 0755 root root - -"
       ];
+
+      # Nixarr's tmpfiles rules can run before the tank/media dataset is
+      # mounted, so the real dataset may not get the library directories (or
+      # may still have old ownership). Recreate them after the mount instead.
+      systemd.services.nixarr-media-library = {
+        description = "Ensure nixarr media library permissions";
+        wantedBy = [ "multi-user.target" ];
+        before = [
+          "sonarr.service"
+          "radarr.service"
+          "lidarr.service"
+          "qbittorrent.service"
+          "bazarr.service"
+        ];
+        unitConfig.RequiresMountsFor = [ "/tank/media" ];
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+        };
+        script = ''
+          ${pkgs.coreutils}/bin/install -d -o root -g media -m 2775 \
+            /tank/media \
+            /tank/media/library \
+            /tank/media/library/shows \
+            /tank/media/library/movies
+          ${pkgs.coreutils}/bin/install -d -o root -g media -m 0775 \
+            /tank/media/library/music
+        '';
+      };
 
       # Nixarr's private web UIs. qBittorrent's own WebUI stays internal to
       # 127.0.0.1:8085; users get qui on 5252.
