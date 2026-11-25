@@ -152,6 +152,10 @@
       # qBittorrent otherwise creates group-readable-only files.
       systemd.services.qbittorrent.serviceConfig.UMask = "0002";
 
+      # FlareSolverr is used by Prowlarr only. It listens locally; Prowlarr is
+      # configured with http://127.0.0.1:8191 under Indexer Proxies.
+      services.flaresolverr.enable = true;
+
       # Nixarr's private web UIs. qBittorrent's own WebUI stays internal to
       # 127.0.0.1:8085; users get qui on 5252.
       networking.firewall.interfaces."tailscale0".allowedTCPPorts = [
