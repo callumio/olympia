@@ -134,8 +134,23 @@
             /tank/media/library/movies
           ${pkgs.coreutils}/bin/install -d -o root -g media -m 0775 \
             /tank/media/library/music
+
+          for dir in \
+            /tank/media/qbittorrent \
+            /tank/media/qbittorrent/.incomplete \
+            /tank/media/qbittorrent/.watch \
+            /tank/media/qbittorrent/manual \
+            /tank/media/qbittorrent/lidarr \
+            /tank/media/qbittorrent/radarr \
+            /tank/media/qbittorrent/sonarr \
+            /tank/media/qbittorrent/shelfmark; do
+            ${pkgs.coreutils}/bin/install -d -o qbittorrent -g media -m 2775 "$dir"
+          done
         '';
       };
+
+      # qBittorrent otherwise creates group-readable-only files.
+      systemd.services.qbittorrent.serviceConfig.UMask = "0002";
 
       # Nixarr's private web UIs. qBittorrent's own WebUI stays internal to
       # 127.0.0.1:8085; users get qui on 5252.
