@@ -96,7 +96,33 @@
             sonarr.series = {
               base_url = "http://127.0.0.1:8989";
               api_key = "!env_var SONARR_API_KEY";
-              quality_definition.type = "series";
+              quality_definition = {
+                type = "series";
+                # Cap 1080p at 90 MB/min (~10.8 GB for a 2-hour film).
+                # Long or very grainy films legitimately need more bitrate.
+                qualities = [
+                  {
+                    name = "HDTV-1080p";
+                    preferred = 75;
+                    max = 90;
+                  }
+                  {
+                    name = "WEBRip-1080p";
+                    preferred = 75;
+                    max = 90;
+                  }
+                  {
+                    name = "WEBDL-1080p";
+                    preferred = 75;
+                    max = 90;
+                  }
+                  {
+                    name = "Bluray-1080p";
+                    preferred = 75;
+                    max = 90;
+                  }
+                ];
+              };
 
               # Qualities below 1080p are omitted, which disables them.
               quality_profiles = [
@@ -110,7 +136,6 @@
                     until_score = x265Score;
                   };
                   qualities = [
-                    { name = "Bluray-1080p Remux"; }
                     { name = "Bluray-1080p"; }
                     {
                       name = "WEB 1080p";
@@ -141,7 +166,33 @@
             radarr.movies = {
               base_url = "http://127.0.0.1:7878";
               api_key = "!env_var RADARR_API_KEY";
-              quality_definition.type = "movie";
+              quality_definition = {
+                type = "movie";
+                # Cap 1080p at 90 MB/min (~10.8 GB for a 2-hour film).
+                # Long or very grainy films legitimately need more bitrate.
+                qualities = [
+                  {
+                    name = "HDTV-1080p";
+                    preferred = 75;
+                    max = 90;
+                  }
+                  {
+                    name = "WEBRip-1080p";
+                    preferred = 75;
+                    max = 90;
+                  }
+                  {
+                    name = "WEBDL-1080p";
+                    preferred = 75;
+                    max = 90;
+                  }
+                  {
+                    name = "Bluray-1080p";
+                    preferred = 75;
+                    max = 90;
+                  }
+                ];
+              };
 
               # Qualities below 1080p are omitted, which disables them.
               quality_profiles = [
@@ -155,7 +206,6 @@
                     until_score = x265Score;
                   };
                   qualities = [
-                    { name = "Remux-1080p"; }
                     { name = "Bluray-1080p"; }
                     {
                       name = "WEB 1080p";
