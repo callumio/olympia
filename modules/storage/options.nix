@@ -70,6 +70,12 @@ _:
                         default = { };
                         description = "ZFS dataset properties, for example recordsize or compression.";
                       };
+
+                      mountOptions = lib.mkOption {
+                        type = lib.types.listOf lib.types.str;
+                        default = [ "nofail" ];
+                        description = "Additional mount options for the generated fileSystems entry. Defaults to nofail so a missing data dataset does not prevent boot.";
+                      };
                     };
                   }
                 );

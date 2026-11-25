@@ -107,17 +107,6 @@ in
                 };
               };
 
-              cloud = {
-                mountpoint = "/tank/cloud";
-                options = {
-                  recordsize = "128K";
-                  compression = "zstd";
-                  xattr = "sa";
-                  acltype = "posixacl";
-                  snapdir = "hidden";
-                };
-              };
-
               backup = {
                 mountpoint = "/tank/backup";
                 options = {

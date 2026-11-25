@@ -70,6 +70,7 @@
           extraDatasets = lib.mapAttrs (_: dataset: {
             type = "zfs_fs";
             inherit (dataset) mountpoint;
+            mountOptions = [ "defaults" ] ++ dataset.mountOptions;
             options = {
               mountpoint = if dataset.mountpoint == null then "none" else "legacy";
             }
